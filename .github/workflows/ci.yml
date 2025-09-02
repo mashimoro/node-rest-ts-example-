@@ -22,11 +22,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install   # 🔄 เปลี่ยนจาก npm ci
 
       - name: Run tests
         run: npm test
 
       - name: Build TypeScript
         run: npm run build
-# .github/workflows/ci.yml
