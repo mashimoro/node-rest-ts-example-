@@ -2,10 +2,6 @@
  * This test is a light unit test that mocks mongoose Model methods.
  * It does not require a running MongoDB instance.
  */
-import { TodoMongoRepository } from '../src/repositories/todo.repository.mongo';
-import mongoose from 'mongoose';
-
-
 jest.mock('mongoose', () => {
   const actual = jest.requireActual('mongoose');
   const mockTodos = [
@@ -17,6 +13,7 @@ jest.mock('mongoose', () => {
   return {
     ...actual,
     models: {},
+    isValidObjectId: jest.fn().mockImplementation((id: string) => id.startsWith('507f1f77')),
     model: jest.fn().mockReturnValue({
       find: jest.fn().mockReturnValue({
         lean: jest.fn().mockResolvedValue(mockTodos)
@@ -24,8 +21,7 @@ jest.mock('mongoose', () => {
       findById: jest.fn().mockImplementation((id: string) => ({
         lean: jest.fn().mockResolvedValue(id === '507f1f77bcf86cd799439011' ? mockTodo : null)
       })),
-
-      create: jest.fn().mockResolvedValue({ _id: 'x', title: 'a', completed: false, createdAt: new Date(), updatedAt: new Date() }),
+      create: jest.fn().mockResolvedValue({ _id: '507f1f77bcf86cd799439011', title: 'a', completed: false, createdAt: new Date(), updatedAt: new Date() }),
       findByIdAndUpdate: jest.fn().mockImplementation((id: string) => ({
         lean: jest.fn().mockResolvedValue(id === '507f1f77bcf86cd799439011' ? mockTodo : null)
       })),
@@ -34,7 +30,7 @@ jest.mock('mongoose', () => {
   };
 });
 
-
+import { TodoMongoRepository } from '../src/repositories/todo.repository.mongo';
 
 describe('TodoMongoRepository (mocked)', () => {
   const repo = new TodoMongoRepository();
@@ -42,18 +38,28 @@ describe('TodoMongoRepository (mocked)', () => {
   it('findAll', async () => {
     const all = await repo.findAll();
     expect(all.length).toBeGreaterThan(0);
+    expect(all[0].title).toBe('Test 1');
+    expect(all[1].completed).toBe(true);
   });
 
   it('findById', async () => {
     const one = await repo.findById('507f1f77bcf86cd799439011');
     expect(one).toBeDefined();
     expect(one?.id).toBe('507f1f77bcf86cd799439011');
+    expect(one?.title).toBe('b');
+  });
+
+  it('findById returns null for invalid id', async () => {
+    const one = await repo.findById('invalid_id');
+    expect(one).toBeNull();
   });
 
   it('create', async () => {
     const created = await repo.create({ id: 'x', title: 'a', completed: false } as any);
     expect(created).toBeDefined();
     expect(created.id).toBeDefined();
+    expect(created.title).toBe('a');
+    expect(created.completed).toBe(false);
   });
 
   it('update', async () => {
@@ -62,8 +68,18 @@ describe('TodoMongoRepository (mocked)', () => {
     expect(updated?.title).toBe('b');
   });
 
+  it('update returns null for invalid id', async () => {
+    const updated = await repo.update('invalid_id', { title: 'c' } as any);
+    expect(updated).toBeNull();
+  });
+
   it('delete', async () => {
     const ok = await repo.delete('507f1f77bcf86cd799439011');
     expect(ok).toBeTruthy();
+  });
+
+  it('delete returns false for invalid id', async () => {
+    const ok = await repo.delete('invalid_id');
+    expect(ok).toBeFalsy();
   });
 });

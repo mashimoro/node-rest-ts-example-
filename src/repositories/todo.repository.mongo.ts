@@ -20,7 +20,7 @@ export class TodoMongoRepository {
 
   private toTodo(doc: TodoDoc): Todo {
     return {
-      id: doc._id.toString(),
+      id: (doc._id as mongoose.Types.ObjectId).toString(),
       title: doc.title,
       completed: doc.completed,
       createdAt: doc.createdAt.toISOString(),
