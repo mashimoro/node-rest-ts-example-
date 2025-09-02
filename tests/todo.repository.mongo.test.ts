@@ -5,20 +5,36 @@
 import { TodoMongoRepository } from '../src/repositories/todo.repository.mongo';
 import mongoose from 'mongoose';
 
+
 jest.mock('mongoose', () => {
   const actual = jest.requireActual('mongoose');
+  const mockTodos = [
+    { _id: '507f1f77bcf86cd799439011', title: 'Test 1', completed: false, createdAt: new Date(), updatedAt: new Date() },
+    { _id: '507f1f77bcf86cd799439012', title: 'Test 2', completed: true, createdAt: new Date(), updatedAt: new Date() }
+  ];
+  const mockTodo = { _id: '507f1f77bcf86cd799439011', title: 'b', completed: false, createdAt: new Date(), updatedAt: new Date() };
+
   return {
     ...actual,
     models: {},
     model: jest.fn().mockReturnValue({
-      find: jest.fn().mockResolvedValue([{ _id: '507f1f77bcf86cd799439011', title: 'a', completed: false, createdAt: new Date(), updatedAt: new Date() }]),
-      findById: jest.fn().mockResolvedValue({ _id: '507f1f77bcf86cd799439011', title: 'a', completed: false, createdAt: new Date(), updatedAt: new Date() }),
-      create: jest.fn().mockResolvedValue({ _id: '507f1f77bcf86cd799439011', title: 'a', completed: false, createdAt: new Date(), updatedAt: new Date() }),
-      findByIdAndUpdate: jest.fn().mockResolvedValue({ _id: '507f1f77bcf86cd799439011', title: 'b', completed: true, createdAt: new Date(), updatedAt: new Date() }),
+      find: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue(mockTodos)
+      }),
+      findById: jest.fn().mockImplementation((id: string) => ({
+        lean: jest.fn().mockResolvedValue(id === '507f1f77bcf86cd799439011' ? mockTodo : null)
+      })),
+
+      create: jest.fn().mockResolvedValue({ _id: 'x', title: 'a', completed: false, createdAt: new Date(), updatedAt: new Date() }),
+      findByIdAndUpdate: jest.fn().mockImplementation((id: string) => ({
+        lean: jest.fn().mockResolvedValue(id === '507f1f77bcf86cd799439011' ? mockTodo : null)
+      })),
       findByIdAndDelete: jest.fn().mockResolvedValue({ _id: '507f1f77bcf86cd799439011' })
     })
   };
 });
+
+
 
 describe('TodoMongoRepository (mocked)', () => {
   const repo = new TodoMongoRepository();
